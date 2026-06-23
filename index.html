@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hadassa">
+<title>Hadassa · Ventas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --gold: #C9A227;
+  --gold-soft: #E4C766;
+  --gold-bg: #2C2408;
+  --ink: #F2F2F7;
+  --paper: #000000;
+  --card: #1C1C1E;
+  --card2: #2C2C2E;
+  --line: #38383A;
+  --muted: #8E8E93;
+  --green: #30D158;
+  --red: #FF453A;
+  --blue: #0A84FF;
+  --blue-soft: #0A84FF;
+  --radius: 16px;
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* ── HEADER ── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  padding: calc(var(--sat) + 14px) 20px 14px;
+  background: #111113;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-brand { font-family: Georgia, serif; font-size: 21px; font-weight: 400; letter-spacing: .04em; }
+.header-brand b { color: var(--gold); font-weight: 700; }
+.header-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.header-bell {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: none; background: var(--card2);
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+
+/* ── PAGES ── */
+.page { display: none; padding: 16px 16px calc(88px + var(--sab)); max-width: 560px; margin: 0 auto; }
+.page.active { display: block; animation: fadeUp .2s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── STAT CARDS ── */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.stat-card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--line); padding: 14px; }
+.stat-card.wide { grid-column: 1/-1; background: linear-gradient(135deg,#0A1628,#0D2040); border-color: #0A84FF33; }
+.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing:.05em; margin-bottom:4px; }
+.stat-value { font-family: Georgia, serif; font-size: 24px; font-weight: 700; color: var(--ink); }
+.stat-card.wide .stat-label { color: #60B0FF; }
+.stat-card.wide .stat-value { font-size: 30px; color: #fff; }
+.stat-change { font-size: 12px; margin-top:4px; }
+.up { color: var(--green); }
+.dn { color: var(--red); }
+
+/* ── SECTION HEAD ── */
+.section-head { display:flex; align-items:center; justify-content:space-between; margin: 18px 0 10px; }
+.section-head h3 { font-size: 15px; font-weight: 700; }
+
+/* ── CARD ── */
+.card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--line); padding: 16px; margin-bottom: 12px; }
+.card-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; display:flex; justify-content:space-between; align-items:center; }
+.badge { font-size:11px; font-weight:600; color:var(--gold); background:var(--gold-bg); border-radius:999px; padding:3px 10px; }
+
+/* ── CHART ── */
+.chart-wrap { position:relative; height:200px; }
+
+/* ── BEST DAYS ── */
+.best-row { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--line); }
+.best-row:last-child { border-bottom:none; }
+.best-name { font-size:15px; font-weight:700; }
+.best-sub { font-size:12px; color:var(--muted); margin-top:1px; }
+.best-val { font-size:15px; font-weight:700; color:var(--green); }
+
+/* ── FILTER TABS ── */
+.filter-tabs { display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; padding-bottom:2px; }
+.filter-tabs::-webkit-scrollbar { display:none; }
+.ftab { flex-shrink:0; border:1px solid var(--line); background:var(--card); border-radius:999px; padding:7px 16px; font-size:13px; font-weight:600; color:var(--muted); font-family:inherit; }
+.ftab.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+/* ── HISTORIAL ROWS ── */
+.hist-group { margin-bottom:20px; }
+.hist-date { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; }
+.sale-row { display:flex; align-items:center; gap:12px; background:var(--card); border-radius:12px; border:1px solid var(--line); padding:12px 14px; margin-bottom:6px; }
+.sale-dot { width:8px; height:8px; border-radius:50%; background:var(--green); flex-shrink:0; }
+.sale-dot.edited { background:var(--gold); }
+.sale-info { flex:1; min-width:0; }
+.sale-time { font-size:12px; color:var(--muted); }
+.sale-cat { font-size:12px; color:var(--muted); }
+.sale-note { font-size:11px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sale-amount { font-size:17px; font-weight:700; white-space:nowrap; }
+.sale-btns { display:flex; gap:6px; }
+.s-btn { width:32px; height:32px; border-radius:8px; border:1px solid var(--line); background:var(--card2); display:flex; align-items:center; justify-content:center; font-size:14px; }
+
+/* ── REPORTES ── */
+.rtabs { display:flex; background:var(--card2); border-radius:10px; padding:3px; margin-bottom:16px; }
+.rtab { flex:1; border:none; background:transparent; padding:8px 4px; font-size:12px; font-weight:600; color:var(--muted); font-family:inherit; border-radius:8px; }
+.rtab.active { background:var(--card); color:var(--ink); }
+.report-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.rstat { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }
+.rstat .rl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+.rstat .rv { font-family:Georgia,serif; font-size:20px; font-weight:700; }
+.rstat .rc { font-size:11px; margin-top:3px; }
+
+/* ── EMPTY ── */
+.empty { text-align:center; padding:48px 20px; color:var(--muted); }
+.empty .ei { font-size:36px; margin-bottom:10px; }
+.empty p { font-size:14px; line-height:1.5; }
+
+/* ── TABBAR ── */
+.tabbar {
+  position:fixed; bottom:0; left:0; right:0; z-index:100;
+  background:rgba(28,28,30,0.95); backdrop-filter:blur(20px);
+  border-top:1px solid var(--line);
+  display:flex; align-items:flex-end;
+  padding:6px 8px calc(6px + var(--sab));
+}
+.tnav { flex:1; border:none; background:transparent; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--muted); font-family:inherit; font-size:10px; font-weight:600; padding:4px 0; }
+.tnav.active { color:var(--blue); }
+.tnav svg { width:24px; height:24px; }
+.fab { width:52px; height:52px; border-radius:50%; background:var(--blue); border:none; display:flex; align-items:center; justify-content:center; font-size:26px; color:#fff; font-weight:300; margin-bottom:4px; flex-shrink:0; box-shadow:0 4px 16px rgba(10,132,255,.45); }
+
+/* ── MODAL ── */
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity .25s; }
+.overlay.open { opacity:1; pointer-events:all; }
+.modal { background:#1C1C1E; border-radius:24px 24px 0 0; padding:20px 20px calc(28px + var(--sab)); width:100%; max-width:560px; margin:0 auto; transform:translateY(32px); transition:transform .25s; border-top:1px solid var(--line); }
+.overlay.open .modal { transform:translateY(0); }
+.modal-handle { width:36px; height:4px; background:var(--line); border-radius:999px; margin:0 auto 18px; }
+.modal-title { font-family:Georgia,serif; font-size:18px; font-weight:700; text-align:center; margin-bottom:4px; }
+.modal-subtitle { font-size:12px; color:var(--muted); text-align:center; margin-bottom:16px; }
+
+/* ── AMOUNT DISPLAY ── */
+.amount-big {
+  text-align:center; padding:14px 0 10px;
+  font-size:52px; font-weight:700; letter-spacing:-.02em;
+  color:#fff; font-family:Georgia,serif;
+  display:flex; align-items:baseline; justify-content:center; gap:4px;
+}
+.amount-big .sym { font-size:28px; color:var(--muted); }
+.amount-big .cents { font-size:28px; color:var(--muted); }
+
+/* ── NUMPAD ── */
+.numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:10px 0 16px; }
+.nk {
+  background:var(--card2); border:none; border-radius:14px;
+  font-size:24px; font-weight:500; padding:17px 8px;
+  color:var(--ink); font-family:inherit;
+  transition:opacity .1s;
+}
+.nk:active { opacity:.5; }
+.nk.span2 { grid-column:span 2; }
+.nk.del { color:var(--red); font-size:20px; }
+
+/* ── FORM ── */
+.form-group { margin-bottom:14px; }
+.form-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; display:block; }
+.field { background:var(--card2); border:1.5px solid var(--line); border-radius:12px; padding:13px 14px; font-size:16px; font-family:inherit; color:var(--ink); width:100%; -webkit-appearance:none; }
+.field:focus { outline:none; border-color:var(--blue); }
+textarea.field { resize:none; height:76px; }
+select.field { appearance:none; -webkit-appearance:none; }
+.btn-save { width:100%; border:none; border-radius:14px; padding:16px; background:var(--blue); color:#fff; font-size:16px; font-weight:700; font-family:inherit; }
+.btn-save:active { opacity:.8; }
+
+/* ── SETTINGS ── */
+.stg-section { margin-bottom:20px; }
+.stg-label { font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; padding:0 4px; }
+.stg-group { background:var(--card); border-radius:12px; border:1px solid var(--line); overflow:hidden; }
+.stg-row { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--line); gap:12px; }
+.stg-row:last-child { border-bottom:none; }
+.stg-key { font-size:15px; }
+.stg-val { font-size:14px; color:var(--muted); }
+
+/* ── TOAST ── */
+#toast { position:fixed; bottom:calc(80px + var(--sab)); left:50%; transform:translateX(-50%) translateY(12px); background:var(--card2); color:#fff; font-size:13px; font-weight:600; padding:10px 20px; border-radius:999px; opacity:0; transition:all .25s; pointer-events:none; z-index:300; white-space:nowrap; border:1px solid var(--line); }
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-brand">Had<b>assa</b></div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+  <button class="header-bell">🔔</button>
+</div>
+
+<!-- ══ INICIO ══ -->
+<div class="page active" id="page-inicio">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Venta de hoy</div>
+      <div class="stat-value" id="s-hoy">$0.00</div>
+      <div class="stat-change" id="s-hoy-ch"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total semanal</div>
+      <div class="stat-value" id="s-sem">$0.00</div>
+      <div class="stat-change" id="s-sem-ch"></div>
+    </div>
+    <div class="stat-card wide">
+      <div class="stat-label">Total del periodo</div>
+      <div class="stat-value" id="s-all">$0.00</div>
+      <div class="stat-change" id="s-all-ch" style="color:#60B0FF"></div>
+    </div>
+  </div>
+
+  <div class="section-head"><h3>Ventas por día — semana actual</h3></div>
+  <div class="card">
+    <div class="chart-wrap"><canvas id="cDia"></canvas></div>
+  </div>
+
+  <div class="section-head"><h3>Mejores días</h3></div>
+  <div class="card" id="bestList"></div>
+</div>
+
+<!-- ══ HISTORIAL ══ -->
+<div class="page" id="page-historial">
+  <div class="filter-tabs">
+    <button class="ftab active" data-f="todas">Todas</button>
+    <button class="ftab" data-f="hoy">Hoy</button>
+    <button class="ftab" data-f="semana">Esta semana</button>
+    <button class="ftab" data-f="mes">Este mes</button>
+  </div>
+  <div id="histList"></div>
+</div>
+
+<!-- ══ REPORTES ══ -->
+<div class="page" id="page-reportes">
+  <div class="rtabs">
+    <button class="rtab active" data-rt="resumen">Resumen</button>
+    <button class="rtab" data-rt="dias">Por días</button>
+    <button class="rtab" data-rt="semanas">Semanas</button>
+  </div>
+
+  <div id="rt-resumen">
+    <div class="report-grid">
+      <div class="rstat"><div class="rl">Total ventas</div><div class="rv" id="r-total">$0</div><div class="rc up" id="r-total-c"></div></div>
+      <div class="rstat"><div class="rl">Promedio diario</div><div class="rv" id="r-prom">$0</div><div class="rc dn" id="r-prom-c"></div></div>
+      <div class="rstat"><div class="rl">Mejor día</div><div class="rv up" id="r-mejor">—</div><div class="rc up" id="r-mejor-v"></div></div>
+      <div class="rstat"><div class="rl">Menor día</div><div class="rv dn" id="r-menor">—</div><div class="rc dn" id="r-menor-v"></div></div>
+    </div>
+    <div class="card"><div class="card-title">Ventas últimos 14 días</div><div class="chart-wrap"><canvas id="cR14"></canvas></div></div>
+  </div>
+
+  <div id="rt-dias" style="display:none">
+    <div class="card"><div class="card-title">Promedio por día de la semana</div><div class="chart-wrap"><canvas id="cRDow"></canvas></div></div>
+  </div>
+
+  <div id="rt-semanas" style="display:none">
+    <div class="card"><div class="card-title">Total por semana</div><div class="chart-wrap"><canvas id="cRSem"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ══ AJUSTES ══ -->
+<div class="page" id="page-ajustes">
+  <div class="stg-section">
+    <div class="stg-label">Datos</div>
+    <div class="stg-group">
+      <div class="stg-row"><span class="stg-key">Ventas registradas</span><span class="stg-val" id="stg-count">0</span></div>
+      <div class="stg-row"><span class="stg-key">Borrar todos los datos</span><button style="background:none;border:none;color:var(--red);font-size:20px;" id="btnDelAll">🗑️</button></div>
+    </div>
+  </div>
+  <div class="stg-section">
+    <div class="stg-label">App</div>
+    <div class="stg-group">
+      <div class="stg-row"><span class="stg-key">Hadassa Joyería · Ventas</span><span class="stg-val">v2.1</span></div>
+      <div class="stg-row"><span class="stg-key">Instalar como app</span><span class="stg-val">Safari → Compartir → Agregar</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TABBAR ══ -->
+<nav class="tabbar">
+  <button class="tnav active" data-p="inicio">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+    Inicio
+  </button>
+  <button class="tnav" data-p="historial">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+    Historial
+  </button>
+  <button class="fab" id="fabBtn">+</button>
+  <button class="tnav" data-p="reportes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/></svg>
+    Reportes
+  </button>
+  <button class="tnav" data-p="ajustes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Ajustes
+  </button>
+</nav>
+
+<!-- ══ MODAL VENTA ══ -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">Nueva venta</div>
+    <div class="modal-subtitle">Toca los números para ingresar el monto</div>
+
+    <div class="amount-big">
+      <span class="sym">$</span>
+      <span id="amtInt">0</span><span class="cents">.<span id="amtDec">00</span></span>
+    </div>
+
+    <div class="numpad">
+      <button class="nk" data-v="1">1</button>
+      <button class="nk" data-v="2">2</button>
+      <button class="nk" data-v="3">3</button>
+      <button class="nk" data-v="4">4</button>
+      <button class="nk" data-v="5">5</button>
+      <button class="nk" data-v="6">6</button>
+      <button class="nk" data-v="7">7</button>
+      <button class="nk" data-v="8">8</button>
+      <button class="nk" data-v="9">9</button>
+      <button class="nk span2" data-v="0">0</button>
+      <button class="nk del" data-v="del">⌫</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notas (opcional)</label>
+      <textarea class="field" id="fNotes" placeholder="Ej. Cliente frecuente, mostrador..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categoría</label>
+      <select class="field" id="fCat">
+        <option>Ventas</option>
+        <option>Mayoreo</option>
+        <option>Apartado</option>
+        <option>Reparación</option>
+        <option>Otro</option>
+      </select>
+    </div>
+
+    <button class="btn-save" id="btnSave">Guardar venta</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ══════ STORAGE ══════ */
+const SK = 'hadassa_v3';
+let sales = [];
+let editId = null;
+let raw = ''; // digits only, last 2 = cents e.g. "125050" = $1250.50
+
+async function load() {
+  try { const r = await window.storage.get(SK); if (r?.value) sales = JSON.parse(r.value); } catch(e) {}
+}
+async function save() {
+  try { await window.storage.set(SK, JSON.stringify(sales)); } catch(e) {}
+}
+
+/* ══════ HELPERS ══════ */
+const DAYS  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const DAYSF = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+const fmt = n => '$' + (n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
+const sow   = d => { const r=new Date(d); r.setDate(r.getDate()-r.getDay()); r.setHours(0,0,0,0); return r; };
+const sameDay = (a,b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2);
+const timeStr = d => d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+const fullDate = d => `${DAYSF[d.getDay()]}, ${d.getDate()} de ${MONTHS[d.getMonth()]} de ${d.getFullYear()}`;
+
+function totalToday() {
+  const t=today(); return sales.filter(s=>sameDay(new Date(s.date),t)).reduce((a,s)=>a+s.amount,0);
+}
+function totalWeek() {
+  const sw=sow(today()); return sales.filter(s=>new Date(s.date)>=sw).reduce((a,s)=>a+s.amount,0);
+}
+function totalAll() { return sales.reduce((a,s)=>a+s.amount,0); }
+
+function weekDayTotals() {
+  const sw=sow(today()); const t=Array(7).fill(0);
+  sales.forEach(s=>{ const d=new Date(s.date); if(d>=sw){ const i=Math.floor((d-sw)/86400000); if(i<7) t[i]+=s.amount; } });
+  return t;
+}
+function bestDays(n=5) {
+  const m={}; sales.forEach(s=>{ const d=new Date(s.date); d.setHours(0,0,0,0); const k=d.toISOString(); m[k]=(m[k]||0)+s.amount; });
+  return Object.entries(m).map(([k,v])=>({date:new Date(k),total:v})).sort((a,b)=>b.total-a.total).slice(0,n);
+}
+function weeklyTotals() {
+  const m={}; sales.forEach(s=>{ const sw=sow(new Date(s.date)); const k=sw.toISOString(); if(!m[k]) m[k]={date:sw,total:0}; m[k].total+=s.amount; });
+  return Object.values(m).sort((a,b)=>a.date-b.date);
+}
+function dowAvg() {
+  const tot=Array(7).fill(0),cnt=Array(7).fill(0),seen={};
+  sales.forEach(s=>{ const d=new Date(s.date); d.setHours(0,0,0,0); const k=d.toISOString(); if(!seen[k]) seen[k]={dow:d.getDay(),total:0}; seen[k].total+=s.amount; });
+  Object.values(seen).forEach(({dow,total})=>{ tot[dow]+=total; cnt[dow]++; });
+  return tot.map((t,i)=>cnt[i]?t/cnt[i]:0);
+}
+
+/* ══════ NUMPAD ══════ */
+function updateAmtDisplay() {
+  const n = raw.padStart(3,'0');
+  const intPart = n.slice(0,-2) || '0';
+  const decPart = n.slice(-2);
+  const intFormatted = parseInt(intPart).toLocaleString('es-MX');
+  document.getElementById('amtInt').textContent = intFormatted;
+  document.getElementById('amtDec').textContent = decPart;
+}
+function getAmount() { return parseInt(raw||'0') / 100; }
+
+document.querySelectorAll('.nk').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const v = btn.dataset.v;
+    if (v==='del') { raw = raw.slice(0,-1); }
+    else { if(raw.length>=9) return; raw += v; }
+    updateAmtDisplay();
+  });
+});
+
+/* ══════ MODAL ══════ */
+const overlay = document.getElementById('overlay');
+
+function openModal(id=null) {
+  editId = id; raw = '';
+  document.getElementById('fNotes').value = '';
+  document.getElementById('fCat').value = 'Ventas';
+
+  if (id) {
+    const s = sales.find(x=>x.id===id);
+    if (s) {
+      raw = Math.round(s.amount*100).toString();
+      document.getElementById('fNotes').value = s.notes||'';
+      document.getElementById('fCat').value = s.cat||'Ventas';
+    }
+    document.getElementById('modalTitle').textContent = 'Editar venta';
+    document.getElementById('btnSave').textContent = 'Guardar cambios';
+  } else {
+    document.getElementById('modalTitle').textContent = 'Nueva venta';
+    document.getElementById('btnSave').textContent = 'Guardar venta';
+  }
+  updateAmtDisplay();
+  overlay.classList.add('open');
+}
+function closeModal() { overlay.classList.remove('open'); editId=null; }
+overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(); });
+document.getElementById('fabBtn').addEventListener('click', ()=>openModal());
+
+document.getElementById('btnSave').addEventListener('click', async ()=>{
+  const amount = getAmount();
+  if (amount <= 0) { showToast('Ingresa un monto'); return; }
+  const notes = document.getElementById('fNotes').value.trim();
+  const cat   = document.getElementById('fCat').value;
+
+  if (editId) {
+    const i = sales.findIndex(s=>s.id===editId);
+    if (i>=0) sales[i] = {...sales[i], amount, notes, cat, edited:true};
+    showToast('Venta actualizada ✓');
+  } else {
+    sales.push({id:uid(), amount, date:new Date().toISOString(), notes, cat, edited:false});
+    showToast('Venta guardada ✓');
+  }
+  await save();
+  closeModal();
+  renderAll();
+});
+
+/* ══════ EDIT / DELETE ══════ */
+window.editSale = id => openModal(id);
+window.delSale  = async id => {
+  if (!confirm('¿Eliminar esta venta?')) return;
+  sales = sales.filter(s=>s.id!==id);
+  await save();
+  renderAll();
+  showToast('Eliminada');
+};
+
+/* ══════ CHARTS ══════ */
+const CC = {}; // chart cache
+function dc(id){ if(CC[id]){ CC[id].destroy(); delete CC[id]; } }
+
+const blueBar   = (n=1) => `rgba(10,132,255,${n})`;
+const blueLight = 'rgba(10,132,255,0.18)';
+const gridColor = 'rgba(255,255,255,0.06)';
+const baseOpts  = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>fmt(c.parsed.y) } } },
+  scales:{
+    y:{ beginAtZero:true, ticks:{callback:v=>'$'+v.toLocaleString('es-MX'),font:{size:10},color:'#8E8E93'}, grid:{color:gridColor}, border:{color:'transparent'} },
+    x:{ grid:{display:false}, ticks:{font:{size:11},color:'#8E8E93'} }
+  }
+};
+
+function drawDia() {
+  dc('dia'); const ctx=document.getElementById('cDia'); if(!ctx) return;
+  const data=weekDayTotals(), todayDow=today().getDay();
+  CC['dia']=new Chart(ctx,{
+    type:'bar',
+    data:{ labels:DAYS, datasets:[{ data, backgroundColor:data.map((_,i)=>i===todayDow?blueBar():blueBar(.35)), borderRadius:6 }] },
+    options:baseOpts
+  });
+}
+
+function drawR14() {
+  dc('r14'); const ctx=document.getElementById('cR14'); if(!ctx) return;
+  const days=[]; const t=today();
+  for(let i=13;i>=0;i--){ const d=new Date(t); d.setDate(d.getDate()-i); days.push(d); }
+  const vals=days.map(d=>sales.filter(s=>sameDay(new Date(s.date),d)).reduce((a,s)=>a+s.amount,0));
+  CC['r14']=new Chart(ctx,{
+    type:'line',
+    data:{ labels:days.map(d=>`${d.getDate()}/${d.getMonth()+1}`), datasets:[{ data:vals, borderColor:blueBar(), backgroundColor:blueLight, tension:.35, fill:true, pointRadius:3, borderWidth:2, pointBackgroundColor:blueBar() }] },
+    options:baseOpts
+  });
+}
+
+function drawDow() {
+  dc('dow'); const ctx=document.getElementById('cRDow'); if(!ctx) return;
+  CC['dow']=new Chart(ctx,{
+    type:'bar',
+    data:{ labels:DAYS, datasets:[{ data:dowAvg(), backgroundColor:blueBar(.7), borderRadius:6 }] },
+    options:baseOpts
+  });
+}
+
+function drawSem() {
+  dc('sem'); const ctx=document.getElementById('cRSem'); if(!ctx) return;
+  const wt=weeklyTotals();
+  CC['sem']=new Chart(ctx,{
+    type:'bar',
+    data:{ labels:wt.map((_,i)=>`Sem ${i+1}`), datasets:[{ data:wt.map(w=>w.total), backgroundColor:blueBar(.85), borderRadius:6 }] },
+    options:baseOpts
+  });
+}
+
+/* ══════ RENDER ══════ */
+function renderAll() {
+  renderHeader(); renderInicio(); renderHist(activeFilter); renderReportes(activeRt); renderAjustes();
+}
+
+function renderHeader() {
+  const d=new Date();
+  document.getElementById('headerDate').textContent=`${DAYSF[d.getDay()]}, ${d.getDate()} de ${MONTHS[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+function renderInicio() {
+  document.getElementById('s-hoy').textContent=fmt(totalToday());
+  document.getElementById('s-sem').textContent=fmt(totalWeek());
+  document.getElementById('s-all').textContent=fmt(totalAll());
+
+  // vs ayer
+  const ayer=new Date(today()); ayer.setDate(ayer.getDate()-1);
+  const th=totalToday(), ty=sales.filter(s=>sameDay(new Date(s.date),ayer)).reduce((a,s)=>a+s.amount,0);
+  if(ty>0){
+    const p=((th-ty)/ty*100).toFixed(1);
+    const el=document.getElementById('s-hoy-ch');
+    el.textContent=(p>=0?'▲':'▼')+' '+Math.abs(p)+'% vs ayer';
+    el.className='stat-change '+(p>=0?'up':'dn');
+  }
+
+  // best days
+  const best=bestDays();
+  const el=document.getElementById('bestList');
+  if(!best.length){
+    el.innerHTML='<div class="empty"><div class="ei">📊</div><p>Registra tus primeras ventas<br>para ver estadísticas.</p></div>';
+  } else {
+    el.innerHTML=best.map(b=>`
+      <div class="best-row">
+        <div><div class="best-name">${DAYSF[b.date.getDay()]}</div><div class="best-sub">${b.date.getDate()}/${b.date.getMonth()+1}/${b.date.getFullYear()}</div></div>
+        <div class="best-val">${fmt(b.total)} ↑</div>
+      </div>`).join('');
+  }
+  drawDia();
+}
+
+let activeFilter='todas';
+function renderHist(f) {
+  activeFilter=f;
+  document.querySelectorAll('.ftab').forEach(b=>b.classList.toggle('active',b.dataset.f===f));
+  const t=today(), sw=sow(t), sm=new Date(t.getFullYear(),t.getMonth(),1);
+  let list=[...sales].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(f==='hoy') list=list.filter(s=>sameDay(new Date(s.date),t));
+  else if(f==='semana') list=list.filter(s=>new Date(s.date)>=sw);
+  else if(f==='mes') list=list.filter(s=>new Date(s.date)>=sm);
+
+  const el=document.getElementById('histList');
+  if(!list.length){ el.innerHTML='<div class="empty"><div class="ei">🧾</div><p>No hay ventas en este periodo.</p></div>'; return; }
+
+  const groups={};
+  list.forEach(s=>{ const d=new Date(s.date); d.setHours(0,0,0,0); const k=d.toISOString(); if(!groups[k]) groups[k]={date:d,items:[]}; groups[k].items.push(s); });
+
+  el.innerHTML=Object.values(groups).map(g=>`
+    <div class="hist-group">
+      <div class="hist-date">${fullDate(g.date)}</div>
+      ${g.items.map(s=>`
+        <div class="sale-row">
+          <div class="sale-dot ${s.edited?'edited':''}"></div>
+          <div class="sale-info">
+            <div class="sale-time">${timeStr(new Date(s.date))}</div>
+            <div class="sale-cat">${s.cat||'Ventas'}</div>
+            ${s.notes?`<div class="sale-note">${s.notes}</div>`:''}
+          </div>
+          <div class="sale-amount">${fmt(s.amount)}</div>
+          <div class="sale-btns">
+            <button class="s-btn" onclick="editSale('${s.id}')">✏️</button>
+            <button class="s-btn" onclick="delSale('${s.id}')">🗑️</button>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+let activeRt='resumen';
+function renderReportes(rt) {
+  activeRt=rt;
+  document.querySelectorAll('.rtab').forEach(b=>b.classList.toggle('active',b.dataset.rt===rt));
+  ['resumen','dias','semanas'].forEach(t=>{ document.getElementById('rt-'+t).style.display=t===rt?'':'none'; });
+
+  if(rt==='resumen'){
+    const ta=totalAll();
+    document.getElementById('r-total').textContent=fmt(ta);
+    const uniqDays=new Set(sales.map(s=>{ const d=new Date(s.date); d.setHours(0,0,0,0); return d.toISOString(); })).size||1;
+    document.getElementById('r-prom').textContent=fmt(ta/uniqDays);
+    const best=bestDays();
+    if(best.length){
+      document.getElementById('r-mejor').textContent=DAYSF[best[0].date.getDay()];
+      document.getElementById('r-mejor-v').textContent=fmt(best[0].total);
+      document.getElementById('r-menor').textContent=DAYSF[best[best.length-1].date.getDay()];
+      document.getElementById('r-menor-v').textContent=fmt(best[best.length-1].total);
+    }
+    drawR14();
+  } else if(rt==='dias') { drawDow(); }
+  else if(rt==='semanas') { drawSem(); }
+}
+
+function renderAjustes() {
+  document.getElementById('stg-count').textContent=sales.length;
+}
+
+document.getElementById('btnDelAll').addEventListener('click', async ()=>{
+  if(!confirm('¿Borrar TODOS los datos?')) return;
+  sales=[]; await save(); renderAll(); showToast('Datos borrados');
+});
+
+/* ══════ NAVIGATION ══════ */
+let activePage='inicio';
+function switchPage(p) {
+  activePage=p;
+  document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+p));
+  document.querySelectorAll('.tnav').forEach(b=>b.classList.toggle('active',b.dataset.p===p));
+  if(p==='inicio') renderInicio();
+  else if(p==='historial') renderHist(activeFilter);
+  else if(p==='reportes') renderReportes(activeRt);
+  else if(p==='ajustes') renderAjustes();
+}
+document.querySelectorAll('.tnav').forEach(b=>b.addEventListener('click',()=>{ if(b.dataset.p) switchPage(b.dataset.p); }));
+document.querySelectorAll('.ftab').forEach(b=>b.addEventListener('click',()=>renderHist(b.dataset.f)));
+document.querySelectorAll('.rtab').forEach(b=>b.addEventListener('click',()=>renderReportes(b.dataset.rt)));
+
+/* ══════ TOAST ══════ */
+let tt;
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),1600); }
+
+/* ══════ INIT ══════ */
+(async()=>{ await load(); renderAll(); })();
+</script>
+</body>
+</html>
